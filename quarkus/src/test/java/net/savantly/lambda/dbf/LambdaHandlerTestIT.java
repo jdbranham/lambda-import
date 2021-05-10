@@ -1,4 +1,4 @@
-package net.savantly.lambda.lambda;
+package net.savantly.lambda.dbf;
 
 import io.quarkus.test.junit.NativeImageTest;
 
