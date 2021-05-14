@@ -5,26 +5,32 @@ import java.lang.invoke.LambdaConversionException;
 import java.nio.file.Files;
 import java.util.Objects;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3Entity;
-
+import net.savantly.lambda.dbf.domain.aws.S3EventNotification.S3Entity;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
-@Singleton
+@ApplicationScoped
 public class DbfResource extends CommonResource {
 
 	private static Logger log = LoggerFactory.getLogger(DbfResource.class);
 	@Inject
 	S3Client s3;
+	
+    @ConfigProperty(name = "destination.keyname.find")
+    String keynameFind;
+    
+    @ConfigProperty(name = "destination.keyname.replace")
+    String keynameReplace;
 
 	public void saveAsCsv(S3Entity s3Entity) throws Exception {
 		
@@ -42,7 +48,7 @@ public class DbfResource extends CommonResource {
 
 		// uploadToTemp(getObjectResponse);
 
-		String destinationKey = changeToCsvKey(key);
+		String destinationKey = changeToCsvKey(key, keynameFind, keynameReplace);
 
 		PutObjectResponse putResponse = s3.putObject(buildPutRequest(destinationKey),
 				RequestBody.fromFile(tempCsvFile));
@@ -57,8 +63,8 @@ public class DbfResource extends CommonResource {
 		return Objects.nonNull(dbfS3Key) && dbfS3Key.toLowerCase().endsWith(".dbf");
 	}
 
-	private static String changeToCsvKey(String dbfS3Key) {
-		return dbfS3Key.toLowerCase().replaceAll(".dbf$", ".csv");
+	protected static String changeToCsvKey(String dbfS3Key, String keynameFind, String keynameReplace) {
+		return dbfS3Key.toLowerCase().replaceFirst(keynameFind, keynameReplace);
 	}
 
 }

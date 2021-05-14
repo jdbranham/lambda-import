@@ -9,25 +9,38 @@ import org.slf4j.LoggerFactory;
 
 import com.amazonaws.services.lambda.runtime.Context;
 import com.amazonaws.services.lambda.runtime.RequestHandler;
-import com.amazonaws.services.lambda.runtime.events.S3Event;
-import com.amazonaws.services.lambda.runtime.events.models.s3.S3EventNotification.S3EventNotificationRecord;
 
 import net.savantly.lambda.dbf.domain.DbfResource;
+import net.savantly.lambda.dbf.domain.S3EventNotificationExtractor;
+import net.savantly.lambda.dbf.domain.aws.S3EventNotification;
+import net.savantly.lambda.dbf.domain.aws.S3EventNotification.S3EventNotificationRecord;
+import net.savantly.lambda.dbf.domain.aws.SnsEvent;
 
-public class LambdaHandler implements RequestHandler<S3Event, String> {
+public class LambdaHandler implements RequestHandler<SnsEvent, String> {
 
 	private static Logger log = LoggerFactory.getLogger(LambdaHandler.class);
 	@Inject
 	DbfResource dbfResource;
+	@Inject
+	S3EventNotificationExtractor s3Extractor;
 
-	public String handleRequest(S3Event input, Context context) {
-		input.getRecords().forEach(eventRecord -> {
-			try {
-				processRecord(eventRecord);
-			} catch (Exception e) {
-				log.error("failed to process event: {}", eventRecord.getEventName());
-			}
-		});
+
+    @Override
+	public String handleRequest(SnsEvent input, Context context) {
+		try {
+			
+			input.getRecords().forEach(r -> {
+				String msg = r.getSns().getMessage();
+				try {
+					S3EventNotification s3Event = s3Extractor.extractNotification(msg);
+					processRecord(s3Event.getRecords().stream().findFirst().orElseThrow(() -> new RuntimeException("no s3 event record found")));
+				} catch (Exception e) {
+					log.error("failed to process S3Event", e);
+				}
+			});
+		} catch (Exception e) {
+			log.error(String.format("failed to process event: {}"), e);
+		}
 		return "success";
 	}
 

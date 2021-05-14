@@ -1,5 +1,25 @@
 # lambda-dbf-to-csv project
 
+The default handler expects to be triggered by a SNS topic containing a S3 ObjectCreated notification.  
+
+
+### Properties
+
+|name|default|description|
+|-|-|-|
+|quarkus.s3.aws.region|us-east-2|The aws region to use|
+|quarkus.s3.aws.credentials.type|default| default/static|
+|quarkus.s3.aws.credentials.static-provider.access-key-id|null|The aws key to use when 'static' is chosen as type|
+|quarkus.s3.aws.credentials.static-provider.secret-access-key|null|The aws secret to use when 'static' is chosen as type|
+|destination.bucket|outbound|The URL of the outbound SQS notification queue
+|destination.keyname.find|^(.*)\\.(dbf|DBF)$|The regex used to search the s3 object key name|
+|destination.keyname.replace|$1.csv|The regex used to replace the s3 object key match result|
+
+
+
+
+
+
 This project uses Quarkus, the Supersonic Subatomic Java Framework.
 
 If you want to learn more about Quarkus, please visit its website: https://quarkus.io/ .
